@@ -1,98 +1,86 @@
 package heap
 
+import (
+	"errors"
+	"fmt"
+)
+
 type Heap struct {
-	data []int
+	items []int
 }
 
-func NewHeap() Heap {
-	return Heap{
-		data: make([]int, 0),
+func NewHeap() *Heap {
+	return &Heap{}
+}
+
+func (h *Heap) Insert(key int) {
+	h.items = append(h.items, key)
+	h.heapifyUp(len(h.items) - 1)
+}
+
+func (h *Heap) ExtractMax() (int, error) {
+	if len(h.items) == 0 {
+		return 0, errors.New("heap is empty")
+	}
+
+	max := h.items[0]
+	lastIndex := len(h.items) - 1
+	h.items[0] = h.items[lastIndex]
+	h.items = h.items[:lastIndex]
+
+	if len(h.items) > 0 {
+		h.heapifyDown(0)
+	}
+
+	return max, nil
+}
+
+func (h *Heap) heapifyDown(index int) {
+	maxIndex := index
+	for {
+		leftChild := 2*index + 1
+		rightChild := 2*index + 2
+
+		if leftChild < len(h.items) && h.items[leftChild] > h.items[maxIndex] {
+			maxIndex = leftChild
+		}
+
+		if rightChild < len(h.items) && h.items[rightChild] > h.items[maxIndex] {
+			maxIndex = rightChild
+		}
+
+		if maxIndex == index {
+			break
+		}
+
+		h.swap(index, maxIndex)
+		index = maxIndex
 	}
 }
 
-func (h *Heap) RootNode() (int, bool) {
-	if len(h.data) == 0 {
-		return 0, false
+func (h *Heap) heapifyUp(index int) {
+	for h.hasParent(index) && h.parent(index) < h.items[index] {
+		h.swap(h.parentIndex(index), index)
+		index = h.parentIndex(index)
 	}
-
-	return h.data[0], true
-}
-
-func (h *Heap) LastNode() interface{} {
-	if len(h.data) == 0 {
-		return nil
-	}
-
-	return h.data[len(h.data)-1]
-}
-
-func (h *Heap) leftChildIndex(index int) int {
-	return (index * 2) + 1
-}
-
-func (h *Heap) rightChildIndex(index int) int {
-	return (index * 2) + 2
 }
 
 func (h *Heap) parentIndex(index int) int {
 	return (index - 1) / 2
 }
 
-func (h *Heap) Insert(value int) {
-	// we insert the value in the last node, remember the last node is the last element in the array
-	h.data = append(h.data, value)
-
-	// create the index for the new value inserted
-	newNodeIndex := len(h.data) - 1
-
-	for newNodeIndex > 0 && h.data[newNodeIndex] > h.data[h.parentIndex(newNodeIndex)] {
-		parentIndex := h.parentIndex(newNodeIndex)
-
-		tempParentValue := h.data[parentIndex]
-		h.data[parentIndex] = h.data[newNodeIndex]
-		h.data[newNodeIndex] = tempParentValue
-
-		newNodeIndex = parentIndex
-	}
+func (h *Heap) hasParent(index int) bool {
+	return h.parentIndex(index) >= 0
 }
 
-func (h *Heap) Pop() (int, bool) {
-	if valueToDelete, ok := h.RootNode(); ok {
-		h.data[0] = h.data[len(h.data)-1]
-		trickleNodeIndex := 0
-
-		for h.hasGreaterChild(trickleNodeIndex) {
-			largerChildIndex := h.findLargerChildIndex(trickleNodeIndex)
-
-			tempTricklyValue := h.data[trickleNodeIndex]
-			h.data[trickleNodeIndex] = h.data[largerChildIndex]
-			h.data[largerChildIndex] = tempTricklyValue
-
-			trickleNodeIndex = largerChildIndex
-		}
-
-		return valueToDelete, true
-	}
-
-	return 0, false
+func (h *Heap) parent(index int) int {
+	return h.items[h.parentIndex(index)]
 }
 
-func (h *Heap) hasGreaterChild(index int) bool {
-	firstCondition := h.leftChildIndex(index) <= len(h.data) && h.data[h.leftChildIndex(index)] > h.data[index]
-	secondCondition := h.rightChildIndex(index) <= len(h.data) && h.data[h.rightChildIndex(index)] > h.data[index]
-
-	return firstCondition || secondCondition
+func (h *Heap) swap(index1, index2 int) {
+	h.items[index1], h.items[index2] = h.items[index2], h.items[index1]
 }
 
-func (h *Heap) findLargerChildIndex(index int) int {
-	// if h.data[h.RightChildIndex(index)]
-	if h.rightChildIndex(index) > len(h.data) {
-		return h.leftChildIndex(index)
-	}
-
-	if h.data[h.rightChildIndex(index)] > h.data[h.leftChildIndex(index)] {
-		return h.rightChildIndex(index)
-	} else {
-		return h.leftChildIndex(index)
-	}
+func (h *Heap) PrintHeap() {
+	fmt.Println(h.items)
 }
